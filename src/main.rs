@@ -17,12 +17,11 @@ use serde::Deserialize;
 
 // The special file offset bilibili client cached
 const SPECIAL_OFFSET: u64 = 9;
-// TODO get account name from environment
+
 const DEFAULT_SOURCE_DIR: &str = "Movies/bilibili";
 const DEFAULT_TARGET_DIR: &str = "Movies/output";
 const VIDEO_METADATA_FILE: &str = ".videoInfo";
 
-// Implement a display trait
 #[derive(Deserialize)]
 struct VideoInfo {
     uname: String,
@@ -53,12 +52,9 @@ impl Display for VideoInfo {
     }
 }
 
-// options
+// Command line arguments
 // --autoremove
 // --skip-failed true
-// ffmpeg path / autodetermine
-// parallel processing
-// Command line arguments
 #[derive(Parser, Debug)]
 #[command(version, long_about = None)]
 #[command(about = "Bilibili Video Dumper", long_about = None)]
@@ -115,7 +111,7 @@ fn ffmpeg_copy(input_media: &Vec<PathBuf>, output_file: &Path) -> Result<(), err
 
 fn process(path: &Path, target_path: &Path) -> Result<(), error::Error> {
     let video_info = get_metadata(path).unwrap();
-    info!("Video Information: {}", video_info);
+    info!("Video: {}", video_info);
 
     let media = get_files_by_extension(path, "m4s");
     debug!("Media files: {:?}", media);
@@ -168,25 +164,17 @@ fn process(path: &Path, target_path: &Path) -> Result<(), error::Error> {
     }
 
     // Copy photos to target directory
-    info!("Copy cover art");
+    debug!("Copy cover art");
     copy_to(Path::new(&video_info.cover_path), &target_dir)?;
-    info!("Copy group cover art");
+    debug!("Copy group cover art");
     copy_to(Path::new(&video_info.group_cover_path), &target_dir)?;
 
     // Copy metadata to target directory
-    // TODO Duplicated with get_metadata
-    info!("Copy metadata");
+    debug!("Copy metadata");
     fs::copy(
         path.join(VIDEO_METADATA_FILE),
         target_dir.join("videoInfo.json"),
     );
-
-    // Doesn't work, returns empty vector
-    // let media_files: Vec<DirEntry> = files
-    //     .map(|f| f.unwrap())
-    //     .filter(|f| f.path().as_path().ends_with("m4s"))
-    //     .collect();
-    // info!("media files {:?}", media_files);
 
     Ok(())
 }
@@ -227,14 +215,14 @@ fn main() -> Result<(), error::Error> {
     debug!("no overwrite: {}", args.no_overwrite);
 
     let source_path = Path::new(&home).join(DEFAULT_SOURCE_DIR);
-    info!("Source directory: {}", source_path.display());
+    debug!("Source directory: {}", source_path.display());
     let subdirs = source_path
         .read_dir()
         .map_err(|_| error::Error::ReadDirectoryFailed)?;
 
     // Create target directory
     let target_path = Path::new(&home).join(DEFAULT_TARGET_DIR);
-    info!("Target directory: {}", target_path.display());
+    debug!("Target directory: {}", target_path.display());
 
     fs::create_dir_all(&target_path)?;
 
