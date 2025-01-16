@@ -1,6 +1,6 @@
 mod error;
 
-/// Bilibili Video Dumper
+/// Bilibili Video converter
 /// by merging cached files to the target video.
 use std::env;
 use std::fmt::Display;
@@ -54,7 +54,7 @@ impl Display for VideoInfo {
 
 // Command line arguments
 // --autoremove
-// --skip-failed true
+// --no-overwrite not used for the moment
 #[derive(Parser, Debug)]
 #[command(version, long_about = None)]
 #[command(about = "Bilibili Video Dumper", long_about = None)]
