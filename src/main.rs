@@ -193,6 +193,7 @@ enum Commands {
     Convert {
         item: Option<String>,
     },
+    // add Clean to clean all or specific item from the cache
 }
 
 // Command line arguments
