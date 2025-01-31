@@ -11,7 +11,7 @@ use std::path::PathBuf;
 use std::process::Command;
 
 use chrono::DateTime;
-use clap::Parser;
+use clap::{Parser, Subcommand};
 use log::*;
 use serde::Deserialize;
 
@@ -52,13 +52,21 @@ impl Display for VideoInfo {
     }
 }
 
+#[derive(Subcommand, Debug)]
+enum Commands {
+    List,
+    Convert,
+}
+
 // Command line arguments
 // --autoremove
 // --no-overwrite not used for the moment
 #[derive(Parser, Debug)]
 #[command(version, long_about = None)]
-#[command(about = "Bilibili Video Dumper", long_about = None)]
+#[command(about = "Bilibili Video Converter", long_about = None)]
 struct Args {
+    #[command(subcommand)]
+    command: Commands,
     /// Remove source files after successful conversion
     #[arg(long, default_value_t = false)]
     autoremove: bool,
@@ -211,8 +219,17 @@ fn main() -> Result<(), error::Error> {
 
     let args = Args::parse();
 
+    debug!("command: {:?}", args.command);
     debug!("autoremove: {}", args.autoremove);
     debug!("no overwrite: {}", args.no_overwrite);
+
+    match args.command {
+        Commands::List => {
+            todo!("Not implemented yet");
+            return Ok(());
+        },
+        _ => {}
+    }
 
     let source_path = Path::new(&home).join(DEFAULT_SOURCE_DIR);
     debug!("Source directory: {}", source_path.display());
