@@ -52,29 +52,6 @@ impl Display for VideoInfo {
     }
 }
 
-#[derive(Subcommand, Debug)]
-enum Commands {
-    List,
-    Convert,
-}
-
-// Command line arguments
-// --autoremove
-// --no-overwrite not used for the moment
-#[derive(Parser, Debug)]
-#[command(version, long_about = None)]
-#[command(about = "Bilibili Video Converter", long_about = None)]
-struct Args {
-    #[command(subcommand)]
-    command: Commands,
-    /// Remove source files after successful conversion
-    #[arg(long, default_value_t = false)]
-    autoremove: bool,
-    /// Do not overwrite target file if exists
-    #[arg(long, default_value_t = false)]
-    no_overwrite: bool,
-}
-
 fn get_metadata(path: &Path) -> Result<VideoInfo, error::Error> {
     let metafile = path.join(VIDEO_METADATA_FILE);
     let metadata_string = fs::read(&metafile)?;
@@ -210,16 +187,52 @@ fn handle_dir(path: &Path, target_path: &Path, autoremove: bool) {
     }
 }
 
-fn main() -> Result<(), error::Error> {
-    let mut builder = env_logger::Builder::new();
-    builder.filter_level(LevelFilter::Info).init();
+#[derive(Subcommand, Debug)]
+enum Commands {
+    List,
+    Convert {
+        item: Option<String>,
+    },
+}
 
-    let home = env::var("HOME").expect("Unable to get home directory");
-    info!("Home: {}", home);
+// Command line arguments
+// --autoremove
+// --skip-failed true
+#[derive(Parser, Debug)]
+#[command(version, long_about = None)]
+#[command(about = "Bilibili Video Converter", long_about = None)]
+struct Args {
+    #[command(subcommand)]
+    command: Commands,
+    /// Enable debug output
+    #[arg(short, default_value_t = false)]
+    verbose: bool,
+    /// Remove source files after successful conversion
+    #[arg(long, default_value_t = false)]
+    autoremove: bool,
+    /// Do not overwrite target file if exists
+    #[arg(long, default_value_t = false)]
+    no_overwrite: bool,
+}
+
+fn main() -> Result<(), error::Error> {
 
     let args = Args::parse();
+    let log_level = match args.verbose {
+        true => {
+            LevelFilter::Debug
+        }
+        false => {
+            LevelFilter::Info
+        }
+    };
 
-    debug!("command: {:?}", args.command);
+    let mut builder = env_logger::Builder::new();
+    builder.filter_level(log_level).init();
+
+    let home = env::var("HOME").expect("Unable to get home directory");
+    
+    info!("Home: {}", home);
     debug!("autoremove: {}", args.autoremove);
     debug!("no overwrite: {}", args.no_overwrite);
 
@@ -228,7 +241,9 @@ fn main() -> Result<(), error::Error> {
             todo!("Not implemented yet");
             return Ok(());
         },
-        _ => {}
+        Commands::Convert { item } => {
+            debug!("Convert item: {:?}", item);
+        }
     }
 
     let source_path = Path::new(&home).join(DEFAULT_SOURCE_DIR);
