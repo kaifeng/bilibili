@@ -187,6 +187,32 @@ fn handle_dir(path: &Path, target_path: &Path, autoremove: bool) {
     }
 }
 
+fn get_video_list(path: &Path) -> Result<Vec<VideoInfo>, error::Error> {
+    
+    let mut video_list = Vec::<VideoInfo>::new();
+
+    let subdirs = path
+    .read_dir()
+    .map_err(|_| error::Error::ReadDirectoryFailed)?;
+
+    for dir in subdirs {
+        match dir {
+            Ok(entry) => {
+                let p = entry.path();
+                let path = p.as_path();
+                if path.is_dir() {
+                    let video_info = get_metadata(path)?;
+                    video_list.push(video_info);
+                }
+            }
+            Err(e) => error!("Failed to read directory: {}", e),
+        }
+    }
+
+    Ok(video_list)
+
+}
+
 #[derive(Subcommand, Debug)]
 enum Commands {
     List,
@@ -236,10 +262,16 @@ fn main() -> Result<(), error::Error> {
     info!("Home: {}", home);
     debug!("autoremove: {}", args.autoremove);
     debug!("no overwrite: {}", args.no_overwrite);
+    
+    let source_path = Path::new(&home).join(DEFAULT_SOURCE_DIR);
+    debug!("Source directory: {}", source_path.display());
 
     match args.command {
         Commands::List => {
-            todo!("Not implemented yet");
+            let videos = get_video_list(&source_path)?;
+            for video in videos {
+                println!("{}", video);
+            }
             return Ok(());
         },
         Commands::Convert { item } => {
@@ -247,8 +279,6 @@ fn main() -> Result<(), error::Error> {
         }
     }
 
-    let source_path = Path::new(&home).join(DEFAULT_SOURCE_DIR);
-    debug!("Source directory: {}", source_path.display());
     let subdirs = source_path
         .read_dir()
         .map_err(|_| error::Error::ReadDirectoryFailed)?;
