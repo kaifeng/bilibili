@@ -265,8 +265,11 @@ fn main() -> Result<(), error::Error> {
     
     let source_path = Path::new(&home).join(DEFAULT_SOURCE_DIR);
     debug!("Source directory: {}", source_path.display());
+    let subdirs = source_path
+        .read_dir()
+        .map_err(|_| error::Error::ReadDirectoryFailed)?;
 
-    match args.command {
+    let specified_item = match args.command {
         Commands::List => {
             let videos = get_video_list(&source_path)?;
             for video in videos {
@@ -275,31 +278,32 @@ fn main() -> Result<(), error::Error> {
             return Ok(());
         },
         Commands::Convert { item } => {
-            debug!("Convert item: {:?}", item);
+            item
         }
-    }
+    };
 
-    let subdirs = source_path
-        .read_dir()
-        .map_err(|_| error::Error::ReadDirectoryFailed)?;
-
-    // Create target directory
+    // Create target directory before processing
     let target_path = Path::new(&home).join(DEFAULT_TARGET_DIR);
     debug!("Target directory: {}", target_path.display());
-
     fs::create_dir_all(&target_path)?;
 
-    // Iterate over subdirectories
-    for dir in subdirs {
-        match dir {
-            Ok(entry) => {
-                let p = entry.path();
-                let path = p.as_path();
-                if path.is_dir() {
-                    handle_dir(path, &target_path, args.autoremove);
+    // Handle the item if specified, otherwise process all by iterating over subdirectories
+    // TODO Make video processing in a uniform way by passing items to process
+    if let Some(item) = specified_item {
+        let item_path = source_path.join(item);
+        handle_dir(&item_path, &target_path, args.autoremove);
+    } else {
+        for dir in subdirs {
+            match dir {
+                Ok(entry) => {
+                    let p = entry.path();
+                    let path = p.as_path();
+                    if path.is_dir() {
+                        handle_dir(path, &target_path, args.autoremove);
+                    }
                 }
+                Err(e) => error!("Failed to read directory: {}", e),
             }
-            Err(e) => error!("Failed to read directory: {}", e),
         }
     }
 
