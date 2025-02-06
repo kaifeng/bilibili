@@ -4,6 +4,8 @@ use thiserror::Error;
 pub enum Error {
     #[error("Invalid argument")]
     InvalidArgument,
+    #[error("Command not found")]
+    CommandNotFound,
     #[error("Failed to read directory")]
     ReadDirectoryFailed,
     #[error("IO Error: {0}")]

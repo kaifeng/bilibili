@@ -244,7 +244,14 @@ struct Args {
 
 fn main() -> Result<(), error::Error> {
 
+    // Check if ffmpeg is available
+    if Command::new("ffmpeg").arg("-version").output().is_err() {
+        eprintln!("ffmpeg is not installed or not found in PATH");
+        return Err(error::Error::CommandNotFound);
+    }
+
     let args = Args::parse();
+
     let log_level = match args.verbose {
         true => {
             LevelFilter::Debug
