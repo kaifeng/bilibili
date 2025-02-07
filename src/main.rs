@@ -259,12 +259,8 @@ fn main() -> Result<(), error::Error> {
     let args = Args::parse();
 
     let log_level = match args.verbose {
-        true => {
-            LevelFilter::Debug
-        }
-        false => {
-            LevelFilter::Info
-        }
+        true => LevelFilter::Debug,
+        false =>  LevelFilter::Info,
     };
 
     let mut builder = env_logger::Builder::new();
