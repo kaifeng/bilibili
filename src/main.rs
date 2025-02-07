@@ -219,7 +219,9 @@ enum Commands {
     Convert {
         item: Option<String>,
     },
-    // add Clean to clean all or specific item from the cache
+    Clean {
+        item: Option<String>,
+    },
 }
 
 // Command line arguments
@@ -242,13 +244,17 @@ struct Args {
     no_overwrite: bool,
 }
 
-fn main() -> Result<(), error::Error> {
+fn check_environment() -> Result<(), error::Error> {
 
     // Check if ffmpeg is available
     if Command::new("ffmpeg").arg("-version").output().is_err() {
         eprintln!("ffmpeg is not installed or not found in PATH");
         return Err(error::Error::CommandNotFound);
     }
+    Ok(())
+}
+
+fn main() -> Result<(), error::Error> {
 
     let args = Args::parse();
 
@@ -286,8 +292,33 @@ fn main() -> Result<(), error::Error> {
         },
         Commands::Convert { item } => {
             item
+        },
+        // this is danger and should need a confirmation
+        Commands::Clean { item } => {
+            if let Some(item) = item {
+                let item_path = source_path.join(item);
+                warn!("Removing directory {:?}", item_path);
+                fs::remove_dir_all(item_path)?;
+            } else {
+                for dir in subdirs {
+                    match dir {
+                        Ok(entry) => {
+                            let p = entry.path();
+                            let path = p.as_path();
+                            if path.is_dir() {
+                                warn!("Removing directory {:?}", entry);
+                                fs::remove_dir_all(path)?;
+                            }
+                        }
+                        Err(e) => error!("Failed to read directory: {}", e),
+                    }
+                }
+            }
+            return Ok(());
         }
     };
+
+    check_environment()?;
 
     // Create target directory before processing
     let target_path = Path::new(&home).join(DEFAULT_TARGET_DIR);
