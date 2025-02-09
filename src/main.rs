@@ -198,10 +198,9 @@ fn get_video_list(path: &Path) -> Result<Vec<VideoInfo>, error::Error> {
     for dir in subdirs {
         match dir {
             Ok(entry) => {
-                let p = entry.path();
-                let path = p.as_path();
+                let path = entry.path();
                 if path.is_dir() {
-                    let video_info = get_metadata(path)?;
+                    let video_info = get_metadata(&path)?;
                     video_list.push(video_info);
                 }
             }
