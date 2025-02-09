@@ -336,10 +336,9 @@ fn main() -> Result<(), error::Error> {
         for dir in subdirs {
             match dir {
                 Ok(entry) => {
-                    let p = entry.path();
-                    let path = p.as_path();
+                    let path = entry.path();
                     if path.is_dir() {
-                        handle_dir(path, &target_path, args.autoremove);
+                        handle_dir(&path, &target_path, args.autoremove);
                     }
                 }
                 Err(e) => error!("Failed to read directory: {}", e),
