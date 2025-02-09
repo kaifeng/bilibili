@@ -254,6 +254,14 @@ fn check_environment() -> Result<(), error::Error> {
     Ok(())
 }
 
+fn prepare_output_directory(home: &String) -> Result<PathBuf, error::Error> {
+    // Create target directory before processing
+    let target_path = Path::new(home).join(DEFAULT_TARGET_DIR);
+    debug!("Target directory: {}", target_path.display());
+    fs::create_dir_all(&target_path)?;
+    Ok(target_path)
+}
+
 fn main() -> Result<(), error::Error> {
 
     let args = Args::parse();
@@ -316,10 +324,8 @@ fn main() -> Result<(), error::Error> {
 
     check_environment()?;
 
-    // Create target directory before processing
-    let target_path = Path::new(&home).join(DEFAULT_TARGET_DIR);
-    debug!("Target directory: {}", target_path.display());
-    fs::create_dir_all(&target_path)?;
+    // prepare output directory before processing
+    let target_path = prepare_output_directory(&home)?;
 
     // Handle the item if specified, otherwise process all by iterating over subdirectories
     // TODO Make video processing in a uniform way by passing items to process
