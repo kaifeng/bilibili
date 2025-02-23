@@ -300,7 +300,7 @@ fn main() -> Result<(), error::Error> {
         Commands::Clean { item } => {
             if let Some(item) = item {
                 let item_path = source_path.join(item);
-                warn!("Removing directory {:?}", item_path);
+                info!("Removing directory {}", item_path.display());
                 fs::remove_dir_all(item_path)?;
             } else {
                 for dir in subdirs {
@@ -309,7 +309,7 @@ fn main() -> Result<(), error::Error> {
                             let p = entry.path();
                             let path = p.as_path();
                             if path.is_dir() {
-                                warn!("Removing directory {:?}", entry);
+                                info!("Removing directory {}", entry.path().display());
                                 fs::remove_dir_all(path)?;
                             }
                         }
