@@ -5,11 +5,9 @@ You will need to cache the video contents that wants to convert from the officia
 
 ## Installation
 
-If you have cloned repository, execute command below:
 ```
-cargo install --path .
+cargo install bilibili
 ```
-to install the binary executable to cargo binary path.
 
 ## Compatibility
 
