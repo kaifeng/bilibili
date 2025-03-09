@@ -2,6 +2,8 @@
 name = "bilibili"
 version = "0.2.0"
 edition = "2021"
+description = "A bilibili video converter"
+license = "Apache-2.0"
 
 [dependencies]
 chrono = "0.4.38"
