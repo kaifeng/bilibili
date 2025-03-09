@@ -3,6 +3,14 @@
 This is a command line tool to convert local cached video contents by the official Bilibili client.
 You will need to cache the video contents that wants to convert from the official client before running this tool.
 
+## Installation
+
+If you have cloned repository, execute command below:
+```
+cargo install --path .
+```
+to install the binary executable to cargo binary path.
+
 ## Compatibility
 
 Tested on macos only.
