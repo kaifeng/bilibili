@@ -27,7 +27,7 @@ struct VideoInfo {
     uname: String,
     title: String,
     #[serde(rename = "groupTitle")]
-    group_title: String,
+    group_title: String, // group title, multiple items can be in the same group
     pubdate: i64,
     #[serde(rename = "updateTime")]
     update_time: i64,
@@ -39,6 +39,7 @@ struct VideoInfo {
     cover_path: String, // should be Path later
     #[serde(rename = "groupCoverPath")]
     group_cover_path: String, // should be Path later
+    p: u32, // appears like an index of items in same group
 }
 
 impl Display for VideoInfo {
