@@ -46,8 +46,8 @@ impl Display for VideoInfo {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let dt = DateTime::from_timestamp(self.pubdate, 0).expect("invalid timestamp");
         let message = format!(
-            "{} Title: {}, UP: {}, size {}, update at {}",
-            self.item_id, self.title, self.uname, self.total_size, dt
+            "[{}] {} - {}, Page<{}>, UP<{}>, Size<{}>, Updated<{}>",
+            self.item_id, self.group_title, self.title, self.p, self.uname, self.total_size, dt
         );
         f.write_str(message.as_str())
     }
@@ -119,10 +119,9 @@ fn process(path: &Path, target_path: &Path) -> Result<(), error::Error> {
 
     // Create target output directory
     let target_dir = if video_info.group_title != video_info.title {
-        target_path.join(format!(
-            "{} - {} - {}",
-            video_info.uname, video_info.group_title, video_info.title
-        ))
+        target_path
+            .join(format!("{} - {}", video_info.uname, video_info.group_title))
+            .join(format!("{} {}", video_info.p, video_info.title))
     } else {
         target_path.join(format!(
             "{} - {}",
