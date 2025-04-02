@@ -270,6 +270,36 @@ fn show_video_list(source_path: &Path) -> Result<(), error::Error> {
     Ok(())
 }
 
+// Clean video cache
+fn clean_cached_video(source_path: &Path, item: Option<String>) -> Result<(), error::Error> {
+
+    if let Some(item) = item {
+        let item_path = source_path.join(item);
+        info!("Removing directory {}", item_path.display());
+        fs::remove_dir_all(item_path)?;
+    } else {
+        let subdirs = source_path
+        .read_dir()
+        .map_err(|_| error::Error::ReadDirectoryFailed)?;
+        
+        for dir in subdirs {
+            match dir {
+                Ok(entry) => {
+                    let p = entry.path();
+                    let path = p.as_path();
+                    if path.is_dir() {
+                        info!("Removing directory {}", entry.path().display());
+                        fs::remove_dir_all(path)?;
+                    }
+                }
+                Err(e) => error!("Failed to read directory: {}", e),
+            }
+        }
+    }
+    Ok(())
+}
+
+
 fn main() -> Result<(), error::Error> {
 
     let args = Args::parse();
@@ -303,26 +333,7 @@ fn main() -> Result<(), error::Error> {
         },
         // this is danger and should need a confirmation
         Commands::Clean { item } => {
-            if let Some(item) = item {
-                let item_path = source_path.join(item);
-                info!("Removing directory {}", item_path.display());
-                fs::remove_dir_all(item_path)?;
-            } else {
-                for dir in subdirs {
-                    match dir {
-                        Ok(entry) => {
-                            let p = entry.path();
-                            let path = p.as_path();
-                            if path.is_dir() {
-                                info!("Removing directory {}", entry.path().display());
-                                fs::remove_dir_all(path)?;
-                            }
-                        }
-                        Err(e) => error!("Failed to read directory: {}", e),
-                    }
-                }
-            }
-            return Ok(());
+            return clean_cached_video(&source_path, item);
         }
     };
 
