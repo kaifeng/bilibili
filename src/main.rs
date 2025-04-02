@@ -261,6 +261,15 @@ fn prepare_output_directory(home: &String) -> Result<PathBuf, error::Error> {
     Ok(target_path)
 }
 
+// Print video list to console
+fn show_video_list(source_path: &Path) -> Result<(), error::Error> {
+    let videos = get_video_list(&source_path)?;
+    for video in videos {
+        println!("{}", video);
+    }
+    Ok(())
+}
+
 fn main() -> Result<(), error::Error> {
 
     let args = Args::parse();
@@ -275,7 +284,7 @@ fn main() -> Result<(), error::Error> {
 
     let home = env::var("HOME").expect("Unable to get home directory");
     
-    info!("Home: {}", home);
+    debug!("Home: {}", home);
     debug!("autoremove: {}", args.autoremove);
     debug!("no overwrite: {}", args.no_overwrite);
     
@@ -287,11 +296,7 @@ fn main() -> Result<(), error::Error> {
 
     let specified_item = match args.command {
         Commands::List => {
-            let videos = get_video_list(&source_path)?;
-            for video in videos {
-                println!("{}", video);
-            }
-            return Ok(());
+            return show_video_list(&source_path);
         },
         Commands::Convert { item } => {
             item
