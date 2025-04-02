@@ -299,6 +299,38 @@ fn clean_cached_video(source_path: &Path, item: Option<String>) -> Result<(), er
     Ok(())
 }
 
+fn convert_video(home: &String, item: Option<String>, autoremove: bool) -> Result<(), error::Error> {
+
+    check_environment()?;
+
+    let source_path = Path::new(&home).join(DEFAULT_SOURCE_DIR);
+    let subdirs = source_path
+        .read_dir()
+        .map_err(|_| error::Error::ReadDirectoryFailed)?;
+
+    // prepare output directory before processing
+    let target_path = prepare_output_directory(&home)?;
+
+    // Handle the item if specified, otherwise process all by iterating over subdirectories
+    // TODO Make video processing in a uniform way by passing items to process
+    if let Some(item) = item {
+        let item_path = source_path.join(item);
+        handle_dir(&item_path, &target_path, autoremove);
+    } else {
+        for dir in subdirs {
+            match dir {
+                Ok(entry) => {
+                    let path = entry.path();
+                    if path.is_dir() {
+                        handle_dir(&path, &target_path, autoremove);
+                    }
+                }
+                Err(e) => error!("Failed to read directory: {}", e),
+            }
+        }
+    }
+    Ok(())
+}
 
 fn main() -> Result<(), error::Error> {
 
@@ -320,46 +352,17 @@ fn main() -> Result<(), error::Error> {
     
     let source_path = Path::new(&home).join(DEFAULT_SOURCE_DIR);
     debug!("Source directory: {}", source_path.display());
-    let subdirs = source_path
-        .read_dir()
-        .map_err(|_| error::Error::ReadDirectoryFailed)?;
 
-    let specified_item = match args.command {
+    match args.command {
         Commands::List => {
-            return show_video_list(&source_path);
+            show_video_list(&source_path)
         },
         Commands::Convert { item } => {
-            item
+            convert_video(&home, item, args.autoremove)
         },
         // this is danger and should need a confirmation
         Commands::Clean { item } => {
-            return clean_cached_video(&source_path, item);
-        }
-    };
-
-    check_environment()?;
-
-    // prepare output directory before processing
-    let target_path = prepare_output_directory(&home)?;
-
-    // Handle the item if specified, otherwise process all by iterating over subdirectories
-    // TODO Make video processing in a uniform way by passing items to process
-    if let Some(item) = specified_item {
-        let item_path = source_path.join(item);
-        handle_dir(&item_path, &target_path, args.autoremove);
-    } else {
-        for dir in subdirs {
-            match dir {
-                Ok(entry) => {
-                    let path = entry.path();
-                    if path.is_dir() {
-                        handle_dir(&path, &target_path, args.autoremove);
-                    }
-                }
-                Err(e) => error!("Failed to read directory: {}", e),
-            }
+            clean_cached_video(&source_path, item)
         }
     }
-
-    Ok(())
 }
