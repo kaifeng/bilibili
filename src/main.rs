@@ -318,7 +318,7 @@ fn convert_video(home: &String, item: Option<String>, autoremove: bool) -> Resul
 }
 
 fn main() -> Result<(), error::Error> {
-    let mut args = Args::parse();
+    let args = Args::parse();
 
     let log_level = match args.verbose {
         true => LevelFilter::Debug,
