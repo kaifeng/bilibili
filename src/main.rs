@@ -30,7 +30,8 @@ struct VideoInfo {
     #[serde(rename = "groupTitle")]
     group_title: String, // group title, multiple items can be in the same group
     pubdate: i64,
-    
+    #[serde(rename = "updateTime")]
+    update_time: i64,
     #[serde(rename = "totalSize")]
     total_size: u64,
     #[serde(rename = "itemId")]
@@ -113,7 +114,7 @@ fn process(path: &Path, target_path: &Path) -> Result<(), error::Error> {
         f.read_to_end(&mut data).unwrap();
 
         let output = target_path.join(output_name);
-        fs::write(&output, data)?;
+        fs::write(&output, data);
         input_media.push(output);
     }
 
@@ -159,7 +160,7 @@ fn process(path: &Path, target_path: &Path) -> Result<(), error::Error> {
     fs::copy(
         path.join(VIDEO_METADATA_FILE),
         target_dir.join("videoInfo.json"),
-    )?;
+    );
 
     Ok(())
 }
@@ -317,7 +318,7 @@ fn convert_video(home: &String, item: Option<String>, autoremove: bool) -> Resul
 }
 
 fn main() -> Result<(), error::Error> {
-    let args = Args::parse();
+    let mut args = Args::parse();
 
     let log_level = match args.verbose {
         true => LevelFilter::Debug,
