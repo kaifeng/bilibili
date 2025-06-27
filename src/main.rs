@@ -11,7 +11,8 @@ use std::path::PathBuf;
 use std::process::Command;
 
 use chrono::DateTime;
-use clap::{Parser, Subcommand};
+use clap::{CommandFactory, Parser, Subcommand};
+use clap_complete::{generate, Shell};
 use log::*;
 use serde::Deserialize;
 
@@ -187,29 +188,36 @@ fn handle_dir(path: &Path, target_path: &Path, autoremove: bool) {
     }
 }
 
-fn get_video_list(path: &Path) -> Result<Vec<VideoInfo>, error::Error> {
-    
-    let mut video_list = Vec::<VideoInfo>::new();
-
+fn get_video_dirs(path: &Path) -> Result<Vec<PathBuf>, error::Error> {
+    let mut video_dirs = Vec::<PathBuf>::new();
     let subdirs = path
-    .read_dir()
-    .map_err(|_| error::Error::ReadDirectoryFailed)?;
+        .read_dir()
+        .map_err(|_| error::Error::ReadDirectoryFailed)?;
 
     for dir in subdirs {
         match dir {
             Ok(entry) => {
                 let path = entry.path();
                 if path.is_dir() {
-                    let video_info = get_metadata(&path)?;
-                    video_list.push(video_info);
+                    video_dirs.push(path);
                 }
             }
-            Err(e) => error!("Failed to read directory: {}", e),
+            Err(e) => {
+                error!("Failed to read directory entry: {}", e);
+            }
         }
     }
+    Ok(video_dirs)
+}
 
+fn get_video_list(path: &Path) -> Result<Vec<VideoInfo>, error::Error> {
+    let mut video_list = Vec::<VideoInfo>::new();
+    let video_dirs = get_video_dirs(path)?;
+    for dir in video_dirs {
+        let video_info = get_metadata(&dir)?;
+        video_list.push(video_info);
+    }
     Ok(video_list)
-
 }
 
 #[derive(Subcommand, Debug)]
@@ -220,6 +228,12 @@ enum Commands {
     },
     Clean {
         item: Option<String>,
+    },
+    /// Generate shell completion scripts
+    Completions {
+        /// The shell to generate completions for
+        #[arg(value_enum)]
+        shell: Shell,
     },
 }
 
@@ -272,69 +286,39 @@ fn show_video_list(source_path: &Path) -> Result<(), error::Error> {
 
 // Clean video cache
 fn clean_cached_video(source_path: &Path, item: Option<String>) -> Result<(), error::Error> {
-
     if let Some(item) = item {
         let item_path = source_path.join(item);
         info!("Removing directory {}", item_path.display());
         fs::remove_dir_all(item_path)?;
     } else {
-        let subdirs = source_path
-        .read_dir()
-        .map_err(|_| error::Error::ReadDirectoryFailed)?;
-        
-        for dir in subdirs {
-            match dir {
-                Ok(entry) => {
-                    let p = entry.path();
-                    let path = p.as_path();
-                    if path.is_dir() {
-                        info!("Removing directory {}", entry.path().display());
-                        fs::remove_dir_all(path)?;
-                    }
-                }
-                Err(e) => error!("Failed to read directory: {}", e),
-            }
+        let video_dirs = get_video_dirs(source_path)?;
+        for dir in video_dirs {
+            info!("Removing directory {}", dir.display());
+            fs::remove_dir_all(dir)?;
         }
     }
     Ok(())
 }
 
 fn convert_video(home: &String, item: Option<String>, autoremove: bool) -> Result<(), error::Error> {
-
     check_environment()?;
+    let source_path = Path::new(home).join(DEFAULT_SOURCE_DIR);
+    let target_path = prepare_output_directory(home)?;
 
-    let source_path = Path::new(&home).join(DEFAULT_SOURCE_DIR);
-    let subdirs = source_path
-        .read_dir()
-        .map_err(|_| error::Error::ReadDirectoryFailed)?;
-
-    // prepare output directory before processing
-    let target_path = prepare_output_directory(&home)?;
-
-    // Handle the item if specified, otherwise process all by iterating over subdirectories
-    // TODO Make video processing in a uniform way by passing items to process
     if let Some(item) = item {
         let item_path = source_path.join(item);
         handle_dir(&item_path, &target_path, autoremove);
     } else {
-        for dir in subdirs {
-            match dir {
-                Ok(entry) => {
-                    let path = entry.path();
-                    if path.is_dir() {
-                        handle_dir(&path, &target_path, autoremove);
-                    }
-                }
-                Err(e) => error!("Failed to read directory: {}", e),
-            }
+        let video_dirs = get_video_dirs(&source_path)?;
+        for dir in video_dirs {
+            handle_dir(&dir, &target_path, autoremove);
         }
     }
     Ok(())
 }
 
 fn main() -> Result<(), error::Error> {
-
-    let args = Args::parse();
+    let mut args = Args::parse();
 
     let log_level = match args.verbose {
         true => LevelFilter::Debug,
@@ -360,9 +344,13 @@ fn main() -> Result<(), error::Error> {
         Commands::Convert { item } => {
             convert_video(&home, item, args.autoremove)
         },
-        // this is danger and should need a confirmation
         Commands::Clean { item } => {
             clean_cached_video(&source_path, item)
+        },
+        Commands::Completions { shell } => {
+            let mut cmd = Args::command();
+            generate(shell, &mut cmd, "bilibili", &mut std::io::stdout());
+            Ok(())
         }
     }
 }
